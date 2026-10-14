@@ -22,9 +22,14 @@ papers and writes notes you can study from and present.
 git clone --recurse-submodules https://github.com/Alwin-Yang/paper-reader ~/.claude/skills/paper-reader
 ```
 
-The skill uses `bash`, `curl`, `tar`, `python3`, and macOS `sips` to convert
-PDF figures to PNG. On other systems figure conversion is skipped, and
-everything else still works.
+The skill uses `bash`, `curl`, `tar` and `python3`. To convert PDF figures to
+PNG it uses poppler (`pdftoppm`) or Ghostscript when installed, and falls back
+to macOS `sips`, which renders some figures blank or cropped. Installing one of
+them is recommended:
+
+```bash
+brew install poppler      # or: brew install ghostscript
+```
 
 ## Use
 

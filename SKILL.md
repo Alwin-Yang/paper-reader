@@ -30,8 +30,10 @@ bash ~/.claude/skills/paper-reader/scripts/fetch_arxiv_source.sh <arxiv url or i
 
 It downloads into a cache at `~/.cache/arxiv-papers/<id>/`, copies
 `paper.pdf` and the unpacked LaTeX `source/` into the folder (never
-overwriting), converts every figure to PNG in the cache, and prints the main
-`.tex` file and the figure list. If you do not know the short name yet, run it
+overwriting), converts every figure to PNG in the cache (with poppler or
+Ghostscript when installed, otherwise macOS `sips`), and prints the main
+`.tex` file and the figure list. Look at a figure before using it; if a PNG is
+blank or cropped, re-render that one figure from `source/` with another tool. If you do not know the short name yet, run it
 without the folder, read the title, then run it again with the folder; the
 second run only copies. If it prints `NO_SOURCE`, arXiv has only a PDF: the
 folder still gets `paper.pdf`, and you read the PDF.

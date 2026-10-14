@@ -94,7 +94,23 @@ while IFS= read -r f; do
   if grep -q '\\begin{document}' "$f"; then entry="$f"; break; fi
 done < <(grep -rl --include='*.tex' '\\documentclass' "$src" 2>/dev/null || true)
 
-# Convert figures to PNG once. sips renders the first page of a PDF.
+# Convert figures to PNG once. For PDF figures prefer poppler, then
+# Ghostscript (both honor the crop box), and fall back to macOS sips, which
+# can render some figures blank or cropped.
+if command -v pdftoppm >/dev/null 2>&1; then renderer=pdftoppm
+elif command -v gs >/dev/null 2>&1; then renderer=gs
+elif command -v sips >/dev/null 2>&1; then renderer=sips
+else renderer=none
+fi
+pdf_to_png() {
+  case "$renderer" in
+    pdftoppm) pdftoppm -png -r 200 -cropbox -singlefile "$1" "${2%.png}" ;;
+    gs) gs -q -dSAFER -dBATCH -dNOPAUSE -dUseCropBox -dFirstPage=1 -dLastPage=1 \
+          -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r200 -sDEVICE=png16m -sOutputFile="$2" "$1" ;;
+    sips) sips -s format png "$1" --out "$2" ;;
+    *) return 1 ;;
+  esac
+}
 mkdir -p "$dir/figures"
 find "$dir/src" -type f \( -iname '*.pdf' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) |
 while IFS= read -r f; do
@@ -103,7 +119,8 @@ while IFS= read -r f; do
   out="$dir/figures/$name.png"
   [ -s "$out" ] && continue
   case "$f" in
-    *.pdf|*.PDF) sips -s format png "$f" --out "$out" >/dev/null 2>&1 || true ;;
+    *.pdf|*.PDF) pdf_to_png "$f" "$out" >/dev/null 2>&1 || true ;;
+    *.png|*.PNG) cp "$f" "$out" ;;
     *) sips -s format png "$f" --out "$out" >/dev/null 2>&1 || cp "$f" "$out" ;;
   esac
 done
@@ -112,5 +129,5 @@ done
 echo "ENTRYPOINT: $entry"
 echo "TEX_FILES:"
 find "$src" -type f -name '*.tex' | sed "s#^$src/#  #" | sort
-echo "FIGURES (PNG, in $dir/figures):"
+echo "FIGURES (PNG via $renderer, in $dir/figures):"
 find "$dir/figures" -type f -name '*.png' | sed "s#^$dir/figures/#  #" | sort
